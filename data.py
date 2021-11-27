@@ -87,6 +87,7 @@ class Dataset:
         self.iambic = args.task == 'iambic'
         self.rhyme = args.task == 'rhyme'
         self.newline = args.task == 'newline'
+        self.toxic = args.task == 'toxic'
 
         self.tokenizer = AutoTokenizer.from_pretrained(FORMALITY_MODEL_STRING if self.formality else TOPIC_MODEL_STRING)
         self.tokenizer.add_special_tokens({'pad_token': PAD_TOKEN})
