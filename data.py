@@ -93,7 +93,28 @@ class Dataset:
         self.gpt_pad_id = self.tokenizer.encode(PAD_TOKEN)[0] # actually just the vocab size
         sentences = []
         self.vocab = defaultdict(lambda: 0)
-        if self.formality:
+        if self.toxic:
+            # self.vocab['placeholder'] = 1 # anything so we don't crash
+            train, val, test = [], [], []
+            train_file = os.path.join(args.data_dir, 'train.csv')
+            import pandas as pd
+            train_data = pd.read_csv(train_file)
+            train = train_data[['comment_text', 'toxic']].itertuples(index=False, name=None) # list of tuples
+            train = list(train)
+            val = train[:100] # split val
+            train = train[100:]
+            test_file = os.path.join(args.data_dir, 'test.csv')
+            test_labels_file = os.path.join(args.data_dir, 'test_labels.csv')
+            test_data = pd.read_csv(test_file)
+            test_labels = pd.read_csv(test_labels_file)
+            test_labels = list(test_labels['toxic'] + 1) # test labels are -1 and 0
+            test_data = list(test_data['comment_text'])
+            test = [(test_data[i], test_labels[i]) for i in range(len(test_data))]
+
+            self.splits = {}
+            self.splits['train'], self.splits['val'], self.splits['test'] = train, val, test
+
+        elif self.formality:
             self.vocab['placeholder'] = 1 # anything so we don't crash
             train, val, test = [], [], []
             for category, label in [('formal', 1), ('informal', 0)]:
@@ -236,7 +257,30 @@ class SplitLoader(torch.utils.data.IterableDataset):
         while not valid:
             if self.pos >= len(self):
                 raise StopIteration
-            if self.parent.topic:
+            if self.parent.toxic:
+                future_word_num_syllables, rhyme_group_index, syllables_to_go = -1, -1, -1
+                raw_sentence, classification_label = self.data[self.pos]
+                original_sentence = raw_sentence.split()
+                sentence = self.parent.tokenizer.encode(raw_sentence, return_tensors='pt')[0]
+                length = len(sentence)
+                min_sentence_length = MIN_SENTENCE_LENGTH
+                if len(sentence) > min_sentence_length: # set to 3. well, everything in data is > 3 for the bag of words task
+                    pos_to_split = length # no need to split since we already have the label
+                    inp = sentence[:pos_to_split]
+                    length = len(inp)
+                    num_words_in_input = len(self.parent.tokenizer.decode(inp).split())
+                    # only look up to 10 words ahead if we're doing count syllables, since we'll filter out anything more than 10 syllables ahead anyway
+                    future_word_position_max = len(original_sentence) - 1
+                    future_word_position = 0
+                    future_word = 'placeholder'
+                    unstripped_future_word = future_word
+                    future_word = future_word.strip().strip(string.punctuation) # NOTE: we didn't strip punctuation for the topic bag of words paper experiments for our method. it doesn't make much difference, though.
+                    word_log_prob, future_word = 0, 0
+                    pad_id = self.parent.gpt_pad_id
+                    example = (inp, length, future_word, word_log_prob, pad_id, classification_label, syllables_to_go, future_word_num_syllables, rhyme_group_index)
+                    valid = True
+
+            elif self.parent.topic:
                 failed = False
                 future_word_num_syllables, rhyme_group_index, syllables_to_go = -1, -1, -1
                 raw_sentence, classification_label = self.data[self.pos], -1

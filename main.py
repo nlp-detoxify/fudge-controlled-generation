@@ -36,7 +36,7 @@ def train(model, dataset, optimizer, criterion, epoch, args, data_start_index):
             if not args.debug and len(inputs) != args.batch_size: # it'll screw up the bias...?
                 continue
         scores = model(inputs, lengths, future_words, log_probs, syllables_to_go, future_word_num_syllables, rhyme_group_index, run_classifier=True)
-        if args.task == 'formality': # we're learning for all positions at once. scores are batch x seq
+        if args.task == 'formality' or args.task == 'toxic': # we're learning for all positions at once. scores are batch x seq
             expanded_labels = classification_targets.unsqueeze(1).expand(-1, scores.shape[1]) # batch x seq
             length_mask = pad_mask(lengths).permute(1, 0) # batch x seq
             loss = criterion(scores.flatten()[length_mask.flatten()==1], expanded_labels.flatten().float()[length_mask.flatten()==1])
@@ -70,7 +70,7 @@ def validate(model, dataset, criterion, epoch, args):
                 if not args.debug and len(inputs) != args.batch_size:
                     continue
             scores = model(inputs, lengths, future_words, log_probs, syllables_to_go, future_word_num_syllables, rhyme_group_index, run_classifier=True)
-            if args.task == 'formality': # we're learning for all positions at once. scores are batch x seq
+            if args.task == 'formality' or args.task == 'toxic': # we're learning for all positions at once. scores are batch x seq
                 expanded_labels = classification_targets.unsqueeze(1).expand(-1, scores.shape[1]) # batch x seq
                 length_mask = pad_mask(lengths).permute(1, 0) # batch x seq
                 loss = criterion(scores.flatten()[length_mask.flatten()==1], expanded_labels.flatten().float()[length_mask.flatten()==1])
@@ -156,7 +156,7 @@ if __name__=='__main__':
     parser = ArgumentParser()
 
     # DATA
-    parser.add_argument('--task', type=str, required=True, choices=['iambic', 'rhyme', 'newline', 'topic', 'formality'])
+    parser.add_argument('--task', type=str, required=True, choices=['iambic', 'rhyme', 'newline', 'topic', 'formality', 'toxic'])
     parser.add_argument('--data_dir', type=str, required=True)
     parser.add_argument('--glove_file', type=str, help='glove embedding init, for topic task')
 

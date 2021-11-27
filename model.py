@@ -18,6 +18,8 @@ class Model(nn.Module):
         self.iambic = args.task == 'iambic'
         self.rhyme = args.task == 'rhyme'
         self.newline = args.task == 'newline'
+        self.toxic = args.task == 'toxic'
+
         if self.topic:
             self.gpt_embed = nn.Embedding(gpt_pad_id + 1, HIDDEN_DIM, padding_idx=gpt_pad_id) # these are subwords, not words
             if glove_embeddings is None:
@@ -68,6 +70,10 @@ class Model(nn.Module):
             self.out_linear2 = nn.Linear(HIDDEN_DIM, HIDDEN_DIM)
             self.out_linear3 = nn.Linear(HIDDEN_DIM, 1)
             self.nonlinear = nn.ReLU()
+        elif self.toxic:
+            self.gpt_embed = nn.Embedding(gpt_pad_id + 1, HIDDEN_DIM, padding_idx=gpt_pad_id) # 0 in marian is ''
+            self.rnn = nn.LSTM(HIDDEN_DIM, HIDDEN_DIM, num_layers=3, bidirectional=False, dropout=0) # want it to be causal so we can learn all positions
+            self.out_linear = nn.Linear(HIDDEN_DIM, 1)
         else:
             raise NotImplementedError # TODO honestly this can/should be refactored into different models
 
@@ -146,6 +152,13 @@ class Model(nn.Module):
             rnn_output = rnn_output.permute(1, 0, 2) # batch x seq x 300
             hidden = torch.cat([rnn_output, self.count_syllable_embed(syllables_to_go).unsqueeze(1).expand(-1, rnn_output.shape[1], -1)], dim=2)
             return self.out_linear3(self.nonlinear(self.out_linear2(self.nonlinear(self.out_linear(hidden))))).squeeze(2)
+        elif self.toxic:
+            inputs = self.gpt_embed(inputs)
+            inputs = pack_padded_sequence(inputs.permute(1, 0, 2), lengths.cpu(), enforce_sorted=False)
+            rnn_output, _ = self.rnn(inputs)
+            rnn_output, _ = pad_packed_sequence(rnn_output)
+            rnn_output = rnn_output.permute(1, 0, 2) # batch x seq x 300
+            return self.out_linear(rnn_output).squeeze(2)
         else: 
             raise NotImplementedError
             
