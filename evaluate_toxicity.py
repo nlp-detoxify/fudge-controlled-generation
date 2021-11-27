@@ -17,7 +17,7 @@ from data import Dataset
 from model import Model
 from util import save_checkpoint, ProgressMeter, AverageMeter, num_params
 from constants import *
-from predict_formality import predict_formality
+from predict_toxicity import predict_toxicity
 
 def main(args):
     with open(args.dataset_info, 'rb') as rf:
@@ -46,19 +46,25 @@ def main(args):
     with open(args.in_file, 'r') as rf:
         for line in rf:
             inputs.append(line.strip())
-    
+    results = []
     for inp in tqdm(inputs, total=len(inputs)):
-        results = predict_formality(gpt_model, 
+        # TODO implement predict_toxicity
+        # def predict_toxicity(gpt_model, gpt_tokenizer, conditioning_model, input_text, condition_words, dataset_info, precondition_topk, postcondition_topk, length_cutoff, condition_lambda=1.0, device='cuda'):
+
+        result = predict_toxicity(gpt_model, 
                         gpt_tokenizer, 
                         conditioning_model, 
                         [inp], 
+                        [], # condition_words
                         dataset_info, 
                         precondition_topk=args.precondition_topk,
-                        do_sample=args.do_sample,
+                        postcondition_topk=args.precondition_topk,
+                        # do_sample=args.do_sample,
                         length_cutoff=args.length_cutoff,
                         condition_lambda=args.condition_lambda,
                         device=args.device)
-        print(results[0])
+        results.append(result)
+        print(result)
 
 
 if __name__=='__main__':
@@ -67,7 +73,7 @@ if __name__=='__main__':
     # DATA
     parser.add_argument('--ckpt', type=str, required=True)
     parser.add_argument('--dataset_info', type=str, required=True, help='saved dataset info')
-    parser.add_argument('--model_string', type=str, default='Helsinki-NLP/opus-mt-es-en')
+    parser.add_argument('--model_string', type=str, default='gpt2-medium')
     parser.add_argument('--model_path', type=str, default=None)
 
     parser.add_argument('--in_file', type=str, default=None, required=True, help='file containing text to run pred on')

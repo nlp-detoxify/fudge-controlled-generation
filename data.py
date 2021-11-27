@@ -99,7 +99,7 @@ class Dataset:
             train, val, test = [], [], []
             train_file = os.path.join(args.data_dir, 'train.csv')
             import pandas as pd
-            train_data = pd.read_csv(train_file)
+            train_data = pd.read_csv(train_file, engine='python', error_bad_lines=False) # avoid pandas erros
             train = train_data[['comment_text', 'toxic']].itertuples(index=False, name=None) # list of tuples
             train = list(train)
             val = train[:100] # split val
