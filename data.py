@@ -97,10 +97,10 @@ class Dataset:
         if self.toxic:
             # self.vocab['placeholder'] = 1 # anything so we don't crash
             train, val, test = [], [], []
-            train_file = os.path.join(args.data_dir, 'train.csv')
+            train_file = os.path.join(args.data_dir, 'augmented_train_short.csv')
             import pandas as pd
             train_data = pd.read_csv(train_file, engine='python', error_bad_lines=False) # avoid pandas erros
-            train = train_data[['comment_text', 'toxic']].itertuples(index=False, name=None) # list of tuples
+            train = train_data[['prefix', 'toxic']].itertuples(index=False, name=None) # list of tuples
             train = list(train)
             val = train[:100] # split val
             train = train[100:]
