@@ -102,12 +102,11 @@ class Dataset:
             train_data = pd.read_csv(train_file, engine='python', error_bad_lines=False) # avoid pandas erros
             train = train_data[['prefix', 'toxic']].itertuples(index=False, name=None) # list of tuples
             train = list(train)
-            val = train[:100] # split val
+            val = train[:100] # TODO split val
             train = train[100:]
 
             test_file = os.path.join(args.data_dir, 'augmented_test_short_mixed.csv')
             test_data = pd.read_csv(test_file)
-            test_data = list(test_data['comment_text'])
             test = test_data[['prefix', 'toxic']].itertuples(index=False, name=None) # list of tuples
             train = list(train)
 
