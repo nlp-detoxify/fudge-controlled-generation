@@ -1,4 +1,6 @@
 import pandas as pd
+from argparse import ArgumentParser
+
 
 train = "train.csv"
 test = "test.csv"
@@ -14,7 +16,7 @@ def split_train():
     nontoxic = train_df[train_df["toxic"] == 0]
     nontoxic.to_csv("train_all_nontoxic.csv", index=False)
 
-split_train()
+# split_train()
 
 def clean_test():
     test_df = pd.read_csv(test)
@@ -29,7 +31,7 @@ def clean_test():
     nontoxic = cleaned[cleaned["toxic"] == 0]
     nontoxic.to_csv("test_all_nontoxic.csv", index=False)
 
-clean_test()
+# clean_test()
 
 def row_to_prefix_row(row):
     prefixes = []
@@ -64,23 +66,30 @@ def process_full():
 
 # process_full()
 
-def process_short(size, mix=True):
+def process_short(size=100, ratio=None, mix=True, type='train'):
+    if ratio is not None:
+        size = ratio * len(pd.read_csv(f'{type}_all_nontoxic.csv'))
+        size = int(size)
     if mix:
-        train_df = pd.concat([pd.read_csv("train_all_nontoxic.csv").head(size//2), pd.read_csv("train_all_toxic.csv").head(size//2)])
-        new_train = augment(train_df)
-        new_train.to_csv("augmented_train_short_mixed.csv", index=False)
-
-        test_df = pd.concat([pd.read_csv("test_all_nontoxic.csv").head(size//2), pd.read_csv("test_all_toxic.csv").head(size//2)])
-        new_test = augment(test_df)
-        new_test.to_csv("augmented_test_short_mixed.csv", index=False)
+        df = pd.concat([pd.read_csv(f"{type}_all_nontoxic.csv").head(size//2), pd.read_csv(f"{type}_all_toxic.csv").head(size//2)])
+        new_df = augment(df)[['prefix', 'toxic']]
+        new_df.to_csv(f'augmented_{type}_mixed.csv', index=False)
     else:
-        train_df = pd.read_csv(train).head(size)
-        new_train = augment(train_df)
-        new_train.to_csv("augmented_train_short.csv", index=False)
+        df = pd.read_csv(f'{type}_all_nontoxic.csv').head(size)
+        new_df = augment(df)[['prefix', 'toxic']]
+        new_df.to_csv(f'augmented_{type}.csv', index=False)
 
-        test_df = pd.read_csv(test_clean).head(size)
-        new_test = augment(test_df)
-        new_test.to_csv("augmented_test_short.csv", index=False)
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    # DATA
+    parser.add_argument('--size', type=int, default=100) # ideally 5000 sentences for 100K prefixes
+    parser.add_argument('--ratio', type=float, default=None)
+    parser.add_argument('--mix', type=bool, default=True, help='whether or not to evenly mix train and test')
+    parser.add_argument('--type', type=str, default='train', choices=['train', 'test', 'both'])
 
-process_short(100)
-
+    args = parser.parse_args()
+    if args.type == 'both':
+        process_short(size=args.size, ratio=args.ratio, mix=args.mix, type='train')
+        process_short(size=args.size, ratio=args.ratio, mix=args.mix, type='test') 
+    else:
+        process_short(size=args.size, ratio=args.ratio, mix=args.mix, type=args.type)

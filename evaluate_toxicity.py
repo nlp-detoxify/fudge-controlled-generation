@@ -49,8 +49,9 @@ def main(args):
     results = []
     for inp in tqdm(inputs, total=len(inputs)):
         # TODO implement predict_toxicity
-        # def predict_toxicity(gpt_model, gpt_tokenizer, conditioning_model, input_text, condition_words, dataset_info, precondition_topk, postcondition_topk, length_cutoff, condition_lambda=1.0, device='cuda'):
-
+        # skip empty input
+        if len(inp) == 0:
+            continue
         result = predict_toxicity(gpt_model, 
                         gpt_tokenizer, 
                         conditioning_model, 
