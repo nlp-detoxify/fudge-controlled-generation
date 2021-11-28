@@ -69,7 +69,7 @@ def main(args):
                             condition_lambda=args.condition_lambda,
                             device=args.device)
             results.append(result[0])
-            print(results[0])
+            print(result[0])
             f.write(result[0] + '\n')
 
 

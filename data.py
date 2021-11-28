@@ -105,10 +105,9 @@ class Dataset:
             train = list(train)
             
             train_len = 100000 
-            train = train[:train_len]
             val_len = train_len // 4
             val = train[train_len:train_len + val_len] # TODO split val
-            # val_len = 100
+            train = train[:train_len]
             test_file = os.path.join(args.data_dir, 'augmented_test_short_mixed.csv')
             test_data = pd.read_csv(test_file)
             test_data['toxic'] = 1 - test_data['toxic'] # Reverse label so that 1 is nontoxic

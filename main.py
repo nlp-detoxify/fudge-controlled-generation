@@ -142,10 +142,7 @@ def main(args):
                         'data_start_index': data_start_index,
                         'args': args
                     }, os.path.join(args.save_dir, 'model_best.pth.tar'))
-                    if args.google_colab:
-                        from google.colab import files
-                        files.download(os.path.join(args.save_dir, 'model_best.pth.tar'))
-
+       
                 save_checkpoint({
                     'epoch': epoch,
                     'state_dict': model.state_dict(),
