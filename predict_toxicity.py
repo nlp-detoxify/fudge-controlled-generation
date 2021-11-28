@@ -80,11 +80,11 @@ def predict_toxicity(gpt_model, gpt_tokenizer, conditioning_model, input_text, c
             if condition_lambda == 0:
                 condition_logits = torch.zeros_like(expanded_future_words).float()
             else:
-                condition_logits = conditioning_model(new_input_candidates.flatten(0, 1), # batch*topk x seq+1
-                                                    expanded_lengths.flatten(0, 1), # batch*topk
-                                                    expanded_future_words.flatten(0, 1), # batch*topk x N
-                                                    log_probs, # N
-                                                    expanded_tokens_left.flatten(0, 1)) # batch*topk
+                condition_logits = conditioning_model(new_input_candidates.flatten(0, 1)) # batch*topk x seq+1
+                                                    # expanded_lengths.flatten(0, 1), # batch*topk
+                                                    # expanded_future_words.flatten(0, 1), # batch*topk x N
+                                                    # log_probs, # N
+                                                    # expanded_tokens_left.flatten(0, 1)) # batch*topk
                 condition_logits = condition_logits.view(batch_size, precondition_topk, -1) # batch x topk x N
                 condition_logits = condition_logits - torch.log(1 + torch.exp(condition_logits)) # get correct log probs
 

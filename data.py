@@ -97,20 +97,18 @@ class Dataset:
         if self.toxic:
             # self.vocab['placeholder'] = 1 # anything so we don't crash
             train, val, test = [], [], []
-            train_file = os.path.join(args.data_dir, 'train.csv')
+            train_file = os.path.join(args.data_dir, 'augmented_train_short_mixed.csv')
             import pandas as pd
             train_data = pd.read_csv(train_file, engine='python', error_bad_lines=False) # avoid pandas erros
-            train = train_data[['comment_text', 'toxic']].itertuples(index=False, name=None) # list of tuples
+            train = train_data[['prefix', 'toxic']].itertuples(index=False, name=None) # list of tuples
             train = list(train)
-            val = train[:100] # split val
+            val = train[:100] # TODO split val
             train = train[100:]
-            test_file = os.path.join(args.data_dir, 'test.csv')
-            test_labels_file = os.path.join(args.data_dir, 'test_labels.csv')
+
+            test_file = os.path.join(args.data_dir, 'augmented_test_short_mixed.csv')
             test_data = pd.read_csv(test_file)
-            test_labels = pd.read_csv(test_labels_file)
-            test_labels = list(test_labels['toxic'] + 1) # test labels are -1 and 0
-            test_data = list(test_data['comment_text'])
-            test = [(test_data[i], test_labels[i]) for i in range(len(test_data))]
+            test = test_data[['prefix', 'toxic']].itertuples(index=False, name=None) # list of tuples
+            train = list(train)
 
             self.splits = {}
             self.splits['train'], self.splits['val'], self.splits['test'] = train, val, test
