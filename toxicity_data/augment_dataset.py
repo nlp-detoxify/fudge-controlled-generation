@@ -14,7 +14,7 @@ def split_train():
     nontoxic = train_df[train_df["toxic"] == 0]
     nontoxic.to_csv("train_all_nontoxic.csv", index=False)
 
-split_train()
+# split_train()
 
 def clean_test():
     test_df = pd.read_csv(test)
@@ -29,7 +29,7 @@ def clean_test():
     nontoxic = cleaned[cleaned["toxic"] == 0]
     nontoxic.to_csv("test_all_nontoxic.csv", index=False)
 
-clean_test()
+# clean_test()
 
 def row_to_prefix_row(row):
     prefixes = []
@@ -64,23 +64,23 @@ def process_full():
 
 # process_full()
 
-def process_short(size, mix=True):
+def process_short(train_size, test_size, mix=True):
     if mix:
-        train_df = pd.concat([pd.read_csv("train_all_nontoxic.csv").head(size//2), pd.read_csv("train_all_toxic.csv").head(size//2)])
+        train_df = pd.concat([pd.read_csv("train_all_nontoxic.csv").head(train_size), pd.read_csv("train_all_toxic.csv").head(train_size)])
         new_train = augment(train_df)
-        new_train.to_csv("augmented_train_short_mixed.csv", index=False)
+        new_train.to_csv("augmented_train_mixed.csv", index=False)
 
-        test_df = pd.concat([pd.read_csv("test_all_nontoxic.csv").head(size//2), pd.read_csv("test_all_toxic.csv").head(size//2)])
+        test_df = pd.concat([pd.read_csv("test_all_nontoxic.csv").head(test_size), pd.read_csv("test_all_toxic.csv").head(test_size)])
         new_test = augment(test_df)
-        new_test.to_csv("augmented_test_short_mixed.csv", index=False)
+        new_test.to_csv("augmented_test_mixed.csv", index=False)
     else:
-        train_df = pd.read_csv(train).head(size)
+        train_df = pd.read_csv(train).head(train_size)
         new_train = augment(train_df)
         new_train.to_csv("augmented_train_short.csv", index=False)
 
-        test_df = pd.read_csv(test_clean).head(size)
+        test_df = pd.read_csv(test_clean).head(test_size)
         new_test = augment(test_df)
         new_test.to_csv("augmented_test_short.csv", index=False)
 
-process_short(100)
+process_short(15000, 6000)
 
