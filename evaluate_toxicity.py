@@ -22,6 +22,7 @@ from predict_toxicity import predict_toxicity
 def main(args):
     with open(args.dataset_info, 'rb') as rf:
         dataset_info = pickle.load(rf)
+    os.makedirs(args.save_dir, exist_ok=True)
     # combine GPT with toxic conditioning model
     gpt_tokenizer = AutoTokenizer.from_pretrained(args.model_string)
     gpt_tokenizer.add_special_tokens({'pad_token': PAD_TOKEN})
@@ -47,24 +48,29 @@ def main(args):
         for line in rf:
             inputs.append(line.strip())
     results = []
-    for inp in tqdm(inputs, total=len(inputs)):
-        # TODO implement predict_toxicity
-        # def predict_toxicity(gpt_model, gpt_tokenizer, conditioning_model, input_text, condition_words, dataset_info, precondition_topk, postcondition_topk, length_cutoff, condition_lambda=1.0, device='cuda'):
-
-        result = predict_toxicity(gpt_model, 
-                        gpt_tokenizer, 
-                        conditioning_model, 
-                        [inp], 
-                        [], # condition_words
-                        dataset_info, 
-                        precondition_topk=args.precondition_topk,
-                        postcondition_topk=args.precondition_topk,
-                        # do_sample=args.do_sample,
-                        length_cutoff=args.length_cutoff,
-                        condition_lambda=args.condition_lambda,
-                        device=args.device)
-        results.append(result)
-        print(result)
+    save_file = 'toxicity_results.txt'
+    with open(os.path.join(args.save_dir, save_file), 'a') as f:
+            
+        for inp in tqdm(inputs, total=len(inputs)):
+            # TODO implement predict_toxicity
+            # skip empty input
+            if len(inp) == 0:
+                continue
+            result = predict_toxicity(gpt_model, 
+                            gpt_tokenizer, 
+                            conditioning_model, 
+                            [inp], 
+                            [], # condition_words
+                            dataset_info, 
+                            precondition_topk=args.precondition_topk,
+                            postcondition_topk=args.precondition_topk,
+                            # do_sample=args.do_sample,
+                            length_cutoff=args.length_cutoff,
+                            condition_lambda=args.condition_lambda,
+                            device=args.device)
+            results.append(result[0])
+            print(result[0])
+            f.write(result[0] + '\n')
 
 
 if __name__=='__main__':
@@ -75,6 +81,7 @@ if __name__=='__main__':
     parser.add_argument('--dataset_info', type=str, required=True, help='saved dataset info')
     parser.add_argument('--model_string', type=str, default='gpt2-medium')
     parser.add_argument('--model_path', type=str, default=None)
+    parser.add_argument('--save_dir', type=str, required=True, help='save results')
 
     parser.add_argument('--in_file', type=str, default=None, required=True, help='file containing text to run pred on')
 

@@ -142,6 +142,7 @@ def main(args):
                         'data_start_index': data_start_index,
                         'args': args
                     }, os.path.join(args.save_dir, 'model_best.pth.tar'))
+       
                 save_checkpoint({
                     'epoch': epoch,
                     'state_dict': model.state_dict(),
@@ -154,6 +155,7 @@ def main(args):
 
 if __name__=='__main__':
     parser = ArgumentParser()
+    parser.add_argument('--google_colab', type=bool, default=False)
 
     # DATA
     parser.add_argument('--task', type=str, required=True, choices=['iambic', 'rhyme', 'newline', 'topic', 'formality', 'toxic'])
