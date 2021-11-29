@@ -12,7 +12,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import AutoTokenizer, AutoModelWithLMHead, pipeline, set_seed, GPT2Tokenizer, GPT2Model, MarianTokenizer, MarianMTModel
-import pandas as pd
 
 from data import Dataset
 from model import Model
@@ -48,30 +47,30 @@ def main(args):
     with open(args.in_file, 'r') as rf:
         for line in rf:
             inputs.append(line.strip())
-    results = []
-    save_file = os.path.join(args.save_dir, 'toxicity_results.csv') # 'toxicity_results.txt'
-    total_len = len(inputs[args.start_index:args.end_index])
-    for inp in tqdm(inputs[args.start_index:args.end_index], total=total_len):
-        # skip empty input
-        if len(inp) == 0:
-            continue
-        result = predict_toxicity(gpt_model, 
-                        gpt_tokenizer, 
-                        conditioning_model, 
-                        [inp], 
-                        [], # condition_words
-                        dataset_info, 
-                        precondition_topk=args.precondition_topk,
-                        postcondition_topk=args.precondition_topk,
-                        # do_sample=args.do_sample,
-                        length_cutoff=args.length_cutoff,
-                        condition_lambda=args.condition_lambda,
-                        device=args.device)
-        results.append(result[0])
-        print(result[0])
 
-    df = pd.DataFrame({'prompt': inputs[args.start_index:args.end_index], 'continuation': results})
-    df.to_csv(save_file, index=False)
+    save_file = 'toxicity_results.txt'
+    with open(os.path.join(args.save_dir, save_file), 'a') as f:
+        for inp in tqdm(inputs, total=len(inputs)):
+            # skip empty input
+            if len(inp) == 0:
+                continue
+            result = predict_toxicity(gpt_model, 
+                            gpt_tokenizer, 
+                            conditioning_model, 
+                            [inp], 
+                            [], # condition_words
+                            dataset_info, 
+                            precondition_topk=args.precondition_topk,
+                            postcondition_topk=args.precondition_topk,
+                            # do_sample=args.do_sample,
+                            length_cutoff=args.length_cutoff,
+                            condition_lambda=args.condition_lambda,
+                            device=args.device)
+            result = result[0]
+            result = result.replace('\n', ' ')
+            # print(result)
+            f.write(result + '\n')
+
 
 if __name__=='__main__':
     parser = ArgumentParser()
@@ -82,9 +81,6 @@ if __name__=='__main__':
     parser.add_argument('--model_string', type=str, default='gpt2-medium')
     parser.add_argument('--model_path', type=str, default=None)
     parser.add_argument('--save_dir', type=str, required=True, help='save results')
-
-    parser.add_argument('--start_index', type=int, default=0)
-    parser.add_argument('--end_index', type=int, default=-1)
 
     parser.add_argument('--in_file', type=str, default=None, required=True, help='file containing text to run pred on')
     # TODO used to be 200; doing 50 bc PPLM does 10
