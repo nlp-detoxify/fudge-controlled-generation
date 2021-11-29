@@ -14,9 +14,10 @@ cont_tox = open('./rtp_continuationtoxicity.txt','w')
 for json_str in json_list:
     result = json.loads(json_str)
     # TODO replace newlines with spaces
-    prompts.write(result[u'prompt'][u'text'].encode('utf-8')+'\n')
+    
+    prompts.write(result[u'prompt'][u'text'].replace("\n"," ")+'\n')
     toxicity.write(str(result[u'prompt'][u'toxicity'])+'\n')
-    continuation.write(result[u'continuation'][u'text'].encode('utf-8')+'\n')
+    continuation.write(result[u'continuation'][u'text'].replace("\n"," ")+'\n')
     cont_tox.write(str(result[u'continuation'][u'toxicity'])+'\n')
 
 
