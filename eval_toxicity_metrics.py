@@ -93,7 +93,7 @@ def distinctness(sentences):
 if __name__=='__main__':
     parser = ArgumentParser()
     parser.add_argument('--log_file', type=str, default="toxicity_data/toxicity_results.txt", help='where to load results from')
-    parser.add_argument('--prompt_labels', type=str, default='toxicity_data/rtp_toxicity01.txt', help='where to load prompt labels from')
+    parser.add_argument('--prompt_labels', type=str, default='toxicity_data/prompts_data/rtp_toxicity01.txt', help='where to load prompt labels from')
     parser.add_argument('--batch_size', type=int, default=8, help='max samples at a time')
     parser.add_argument('--device', type=str, default='cuda', choices=['cpu', 'cuda'])
     args = parser.parse_args()
@@ -141,4 +141,4 @@ if __name__=='__main__':
 
     df = pd.DataFrame({"Overall Non-Toxicity": [overall_acc], "Natural Non-Toxicity": [nat_acc], "Adversarial Non-Toxicity": [adv_acc], 
                     "Distinctness": [distinct], "Grammaticality": [grammatical], "Perplexity": [perplex]})
-    df.to_csv("toxicity_metrics.csv")
+    df.to_csv("toxicity_data/toxicity_metrics.csv")
