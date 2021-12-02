@@ -14,6 +14,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import AutoTokenizer, AutoModelWithLMHead, AutoModelForSequenceClassification
+from detoxify import Detoxify
 
 from data import Dataset
 from model import Model
@@ -29,6 +30,11 @@ def nontox_accuracy(sentences, tokenizer, model, device='cuda'):
             nontoxic = (model(input)[0] == 0).cpu().item()
             total_nontoxic += nontoxic
         return total_nontoxic / len(sentences) # avg accuracy
+
+
+def nontox_accuracy(sentences, model, device='cuda'):
+    results = model.predict(sentences)
+    return np.sum(np.round(results['toxicity'])) / len(results['toxicity'])
 
 
 def perplexity(sentences, tokenizer, model, device='cuda'):
@@ -82,11 +88,11 @@ if __name__=='__main__':
     with open(args.log_file, 'r') as rf:
         for line in rf:
             results.append(line.strip())
-
-    # toxic_tokenizer = AutoTokenizer.from_pretrained('???')
-    # toxic_model = AutoModelForSequenceClassification.from_pretrained('????').to(args.device)
-    # toxic_model.eval()
-    # print('non-toxicity:', nontox_accuracy(results, toxic_tokenizer, toxic_model, device=args.device))
+    
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = Detoxify('original', device=device)
+    nontoxicity = nontox_accuracy(results) # model.predict(results)
+    print('non-toxicity', nontoxicity)
 
     print('distinctness:', distinctness(results))
 
