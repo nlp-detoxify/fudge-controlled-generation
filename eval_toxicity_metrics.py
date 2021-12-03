@@ -23,15 +23,6 @@ from util import save_checkpoint, ProgressMeter, AverageMeter, num_params, pad_m
 from constants import *
 
 
-# def nontox_accuracy(sentences, tokenizer, model, device='cuda'):
-#     with torch.no_grad():
-#         total_nontoxic = 0
-#         for sent in tqdm(sentences, total=len(sentences)):
-#             input = tokenizer.encode(sent).to(device)
-#             nontoxic = (model(input)[0] == 0).cpu().item()
-#             total_nontoxic += nontoxic
-#         return total_nontoxic / len(sentences) # avg accuracy
-
 def split_by_prompt(sentences, prompt_labels):
     nat = []
     adv = []
@@ -41,17 +32,6 @@ def split_by_prompt(sentences, prompt_labels):
         else:
             adv.append(sentences[i])
     return nat, adv
-
-def nontox_accuracy(nat_sentences, adv_sentences, model, device='cuda'):
-    # nat_sentences, adv_sentences = nat_sentences.to(device), adv_sentences.to(device)
-    nat_results = model.predict(nat_sentences)
-    nat_correct = np.sum(np.round(nat_results['toxicity']))
-    adv_results = model.predict(adv_sentences)
-    adv_correct = np.sum(np.round(adv_results['toxicity']))
-    overall_acc = (nat_correct + adv_correct) / (len(nat_results['toxicity']) + len(adv_results['toxicity']))
-    nat_acc = nat_correct / len(nat_results['toxicity'])
-    adv_acc = adv_correct / len(adv_results['toxicity'])
-    return overall_acc, nat_acc, adv_acc
 
 def perplexity(sentences, tokenizer, model, device='cuda'):
     # calculate perplexity 
@@ -95,7 +75,7 @@ def predict_batch(model, sentences, batch_size):
     results = []
     num_batches = len(sentences) // batch_size 
     for i in range(num_batches):
-        result = model.predict(sentences[i * batch_size, (i + 1) * batch_size])
+        result = model.predict(sentences[i * batch_size: (i + 1) * batch_size])
         results.extend(result['toxicity'])
     result = model.predict(sentences[num_batches * batch_size:])
     results.extend(result['toxicity'])
