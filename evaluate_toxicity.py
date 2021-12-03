@@ -47,12 +47,17 @@ def main(args):
     with open(args.in_file, 'r') as rf:
         for line in rf:
             inputs.append(line.strip())
-    results = []
+
     save_file = 'toxicity_results.txt'
+
+    if args.split:
+        save_file = f'toxicity_results_{args.group}of{args.num_groups}.txt'
+        start = len(inputs)//args.num_groups * args.group
+        end = len(inputs)//args.num_groups * (args.group+1) if args.group != args.num_groups-1 else len(inputs)
+        inputs = inputs[start:end]
+
     with open(os.path.join(args.save_dir, save_file), 'a') as f:
-            
         for inp in tqdm(inputs, total=len(inputs)):
-            # TODO implement predict_toxicity
             # skip empty input
             if len(inp) == 0:
                 continue
@@ -68,9 +73,10 @@ def main(args):
                             length_cutoff=args.length_cutoff,
                             condition_lambda=args.condition_lambda,
                             device=args.device)
-            results.append(result[0])
-            print(result[0])
-            f.write(result[0] + '\n')
+            result = result[0]
+            result = result.replace('\n', ' ')
+            # print(result)
+            f.write(result + '\n')
 
 
 if __name__=='__main__':
@@ -84,11 +90,15 @@ if __name__=='__main__':
     parser.add_argument('--save_dir', type=str, required=True, help='save results')
 
     parser.add_argument('--in_file', type=str, default=None, required=True, help='file containing text to run pred on')
-
+    # TODO used to be 200; doing 50 bc PPLM does 10
     parser.add_argument('--precondition_topk', type=int, default=200, help='consider top k outputs from gpt at each step before conditioning and re-pruning')
     parser.add_argument('--do_sample', action='store_true', default=False, help='sample or greedy; only greedy implemented')
     parser.add_argument('--condition_lambda', type=float, default=1.0, help='lambda weight on conditioning model')
     parser.add_argument('--length_cutoff', type=int, default=512, help='max length')
+
+    parser.add_argument('--split', action='store_true', default=False, help='split input into groups')
+    parser.add_argument('--num_groups', type=int, default=1, help='number of groups to split input into')
+    parser.add_argument('--group', type=int, default=0, help='which input group: 0 through num_groups-1')
 
     parser.add_argument('--seed', type=int, default=1, help='random seed')
     parser.add_argument('--device', type=str, default='cuda', choices=['cpu', 'cuda'])
