@@ -36,6 +36,8 @@ def split_by_prompt(sentences, prompt_labels):
     nat = []
     adv = []
     for i, label in enumerate(prompt_labels):
+        if i >= len(sentences):
+            break
         if label == "0":
             nat.append(sentences[i])
         else:
@@ -115,9 +117,9 @@ if __name__=='__main__':
     # args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = Detoxify('original', device=args.device)
     overall_acc, nat_acc, adv_acc = nontox_accuracy(nat_sentences, adv_sentences, model) # model.predict(results)
-    print('non-toxicity', overall_acc)
-    print('natural non-toxicity', nat_acc)
-    print('adversarial non-toxicity', adv_acc)
+    print('toxicity', overall_acc)
+    print('natural toxicity', nat_acc)
+    print('adversarial toxicity', adv_acc)
 
     distinct = distinctness(results)
     print('distinctness:', distinct)
@@ -139,6 +141,6 @@ if __name__=='__main__':
     # eval_model.eval()
     # print('TFXL perplexity:', perplexity(results, eval_tokenizer, eval_model, device=args.device))
 
-    df = pd.DataFrame({"Overall Non-Toxicity": [overall_acc], "Natural Non-Toxicity": [nat_acc], "Adversarial Non-Toxicity": [adv_acc], 
+    df = pd.DataFrame({"Overall Toxicity": [overall_acc], "Natural Toxicity": [nat_acc], "Adversarial Toxicity": [adv_acc], 
                     "Distinctness": [distinct], "Grammaticality": [grammatical], "Perplexity": [perplex]})
     df.to_csv("toxicity_data/toxicity_metrics.csv")
