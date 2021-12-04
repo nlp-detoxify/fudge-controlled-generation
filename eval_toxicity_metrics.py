@@ -27,6 +27,8 @@ def split_by_prompt(sentences, prompt_labels):
     nat = []
     adv = []
     for i, label in enumerate(prompt_labels):
+        if i >= len(sentences):
+            break
         if label == "0":
             nat.append(sentences[i])
         else:
@@ -112,18 +114,18 @@ if __name__=='__main__':
     adv_acc = np.mean(adv_results)
 
     print('Non-rounded')
-    print('non-toxicity', overall_acc)
-    print('natural non-toxicity', nat_acc)
-    print('adversarial non-toxicity', adv_acc)
+    print('toxicity', overall_acc)
+    print('natural toxicity', nat_acc)
+    print('adversarial toxicity', adv_acc)
 
     overall_acc = (np.sum(np.round(nat_results)) + np.sum(adv_results)) / len(results)
     nat_acc = np.sum(np.round(nat_results)) / len(nat_results)
     adv_acc = np.sum(np.round(adv_results)) / len(adv_results)
 
     print('Rounded')
-    print('non-toxicity', overall_acc)
-    print('natural non-toxicity', nat_acc)
-    print('adversarial non-toxicity', adv_acc)
+    print('toxicity', overall_acc)
+    print('natural toxicity', nat_acc)
+    print('adversarial toxicity', adv_acc)
 
 
     distinct = distinctness(results)
@@ -146,6 +148,6 @@ if __name__=='__main__':
     # eval_model.eval()
     # print('TFXL perplexity:', perplexity(results, eval_tokenizer, eval_model, device=args.device))
 
-    df = pd.DataFrame({"Overall Non-Toxicity": [overall_acc], "Natural Non-Toxicity": [nat_acc], "Adversarial Non-Toxicity": [adv_acc], 
+    df = pd.DataFrame({"Overall Toxicity": [overall_acc], "Natural Toxicity": [nat_acc], "Adversarial Toxicity": [adv_acc], 
                     "Distinctness": [distinct], "Grammaticality": [grammatical], "Perplexity": [perplex]})
     df.to_csv("toxicity_data/toxicity_metrics.csv")
