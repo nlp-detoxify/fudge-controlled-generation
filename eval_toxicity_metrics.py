@@ -87,6 +87,8 @@ def predict_batch(model, sentences, batch_size):
 if __name__=='__main__':
     parser = ArgumentParser()
     parser.add_argument('--log_file', type=str, default="toxicity_data/toxicity_results.txt", help='where to load results from')
+    parser.add_argument("--add_prompts", action='store_true', default=False, help='concatenate prompt to results for grammaticality')
+    parser.add_argument('--prompt_file', type=str, default="toxicity_data/prompts_data/rtp_prompts.txt", help='where to load prompts from')
     parser.add_argument('--prompt_labels', type=str, default='toxicity_data/prompts_data/rtp_toxicity01.txt', help='where to load prompt labels from')
     parser.add_argument('--batch_size', type=int, default=1000, help='max samples at a time')
     parser.add_argument('--device', type=str, default='cuda', choices=['cpu', 'cuda'])
@@ -101,6 +103,16 @@ if __name__=='__main__':
     with open(args.prompt_labels, 'r') as rf:
         for line in rf:
             prompt_labels.append(line.strip())
+    
+    if args.add_prompts:
+        full_sentences = []
+        with open(args.prompt_file, 'r') as rf:
+            for i, line in enumerate(rf):
+                if i >= len(results):
+                    break
+                full_sentences.append(line.strip() + " " + results[i])
+    else:
+        full_sentences = results
 
     nat_sentences, adv_sentences = split_by_prompt(results, prompt_labels)
 
@@ -134,7 +146,7 @@ if __name__=='__main__':
     grammar_tokenizer = AutoTokenizer.from_pretrained('textattack/roberta-base-CoLA')
     grammar_model = AutoModelForSequenceClassification.from_pretrained('textattack/roberta-base-CoLA').to(args.device)
     grammar_model.eval()
-    grammatical = grammaticality(results, grammar_tokenizer, grammar_model, device=args.device)
+    grammatical = grammaticality(full_sentences, grammar_tokenizer, grammar_model, device=args.device)
     print('grammaticality:', grammatical)
 
     eval_tokenizer = AutoTokenizer.from_pretrained('openai-gpt')
