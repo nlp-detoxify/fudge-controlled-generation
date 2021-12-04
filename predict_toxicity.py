@@ -53,23 +53,28 @@ def main(args):
         print(results)
         import pdb; pdb.set_trace()
 
-def predict_toxicity(gpt_model, gpt_tokenizer, conditioning_model, input_text, condition_words, dataset_info, precondition_topk, postcondition_topk, length_cutoff, condition_lambda=1.0, device='cuda'):
-    # TODO based on predict_topic for now
+def predict_toxicity(gpt_model, gpt_tokenizer, conditioning_model, input_text, condition_words, dataset_info, precondition_topk, postcondition_topk, length_cutoff, condition_lambda=1.0, continuation=True, device='cuda'):
+    # input_text is list of text
+    # currently, list of 1 sentence prompt
+    # continuation (bool): whether or not to only return the continued generation, and not the original prompt. If True, this does not count the original prompt in the length_cutoff or resulting generation.
     condition_words = []
     with torch.no_grad():
         batch_size = len(input_text)
 
         # condition_words = condition_words.split()
         future_words = torch.LongTensor([dataset_info.word2index[cw] for cw in condition_words]).to(device) # N
-        log_probs = torch.Tensor([math.log(dataset_info.vocab[cw] / dataset_info.total_words) for cw in condition_words]).to(device) # N
+        # log_probs = torch.Tensor([math.log(dataset_info.vocab[cw] / dataset_info.total_words) for cw in condition_words]).to(device) # N
 
         # assumes initially all same length.
         encoded_input = [gpt_tokenizer.encode(it, return_tensors='pt').to(device) for it in input_text] # batch x seq
+        length_initial = 0
+        if continuation:
+            length_initial = encoded_input[0].shape[1] # length of sentence prompt
+
         encoded_input = torch.cat(encoded_input, dim=0)
         lengths = torch.LongTensor([encoded_input.shape[1]]).to(device)
-
-        gpt_encoded_future_words = [gpt_tokenizer.encode(' ' + cw, return_tensors='pt')[0].to(device) for cw in condition_words]
-        while lengths.max() < length_cutoff:
+        # gpt_encoded_future_words = [gpt_tokenizer.encode(' ' + cw, return_tensors='pt')[0].to(device) for cw in condition_words]
+        while lengths.max() < length_cutoff + length_initial:
             tokens_left = torch.LongTensor([length_cutoff - lengths.max() for _ in range(batch_size)]).to(device)
             gpt_logits = gpt_model(encoded_input)[0][:, -1, :] # batch x vocab
             top_logits, top_indices = gpt_logits.topk(precondition_topk, dim=1) # batch x topk
@@ -96,8 +101,7 @@ def predict_toxicity(gpt_model, gpt_tokenizer, conditioning_model, input_text, c
             next_indices = top_indices[torch.arange(batch_size).to(top_indices.device), index_into_top_indices] # batch
             encoded_input = torch.cat([encoded_input, next_indices.unsqueeze(1)], dim=1) # batch x seq+1
             lengths = lengths + 1 # batch
-        return [gpt_tokenizer.decode(s) for s in encoded_input]
-        
+        return [gpt_tokenizer.decode(s[length_initial:]) for s in encoded_input] # only return continuation, not orig prompt
 
 if __name__=='__main__':
     parser = ArgumentParser()
