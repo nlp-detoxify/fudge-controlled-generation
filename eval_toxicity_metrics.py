@@ -109,7 +109,7 @@ if __name__=='__main__':
     nat_results = predict_batch(model, nat_sentences, args.batch_size)
     adv_results = predict_batch(model, adv_sentences, args.batch_size)
 
-    overall_acc = (np.sum(nat_results) + np.sum(adv_results)) / len(results)
+    overall_acc = (np.sum(nat_results) + np.sum(adv_results)) / (len(nat_results) + len(adv_results))
     nat_acc = np.mean(nat_results)
     adv_acc = np.mean(adv_results)
 
@@ -118,7 +118,7 @@ if __name__=='__main__':
     print('natural toxicity', nat_acc)
     print('adversarial toxicity', adv_acc)
 
-    overall_acc = (np.sum(np.round(nat_results)) + np.sum(adv_results)) / len(results)
+    overall_acc = (np.sum(np.round(nat_results)) + np.sum(adv_results)) / (len(nat_results) + len(adv_results))
     nat_acc = np.sum(np.round(nat_results)) / len(nat_results)
     adv_acc = np.sum(np.round(adv_results)) / len(adv_results)
 
