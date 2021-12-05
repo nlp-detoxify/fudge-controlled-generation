@@ -88,7 +88,7 @@ def validate(model, dataset, criterion, epoch, args):
                 progress.display(batch_num)
     progress.display(total_length)
     acc = correct/total_length
-    print("Test accuracy: ", acc)
+    print("validation accuracy: ", acc)
     return loss_meter.avg, acc
 
 
