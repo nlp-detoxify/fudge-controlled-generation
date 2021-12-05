@@ -104,10 +104,12 @@ class Dataset:
             train = train_data[['prefix', 'toxic']].itertuples(index=False, name=None) # list of tuples
             train = list(train)
             
-            train_len = 100000 
+            train_len = 100000
             val_len = train_len // 4
-            val = train[train_len:train_len + val_len] # TODO split val
-            train = train[:train_len]
+            midpoint = len(train) // 2
+            val = train[train_len//2:train_len//2 + val_len] + train[midpoint+train_len//2:midpoint+train_len//2 + val_len]# TODO split val
+            train = train[:train_len//2] + train[midpoint:midpoint+train_len//2]
+
             test_file = os.path.join(args.data_dir, 'augmented_test_mixed.csv')
             test_data = pd.read_csv(test_file)
             test_data['toxic'] = 1 - test_data['toxic'] # Reverse label so that 1 is nontoxic
