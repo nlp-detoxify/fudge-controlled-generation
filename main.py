@@ -79,7 +79,7 @@ def validate(model, dataset, criterion, epoch, args):
                 processed_labels = expanded_labels.flatten().float()[length_mask.flatten()==1]
                 loss = criterion(processed_scores, processed_labels)
                 correct += torch.sum(torch.round(torch.sigmoid(processed_scores)) == processed_labels).detach().item()
-                total += scores.shape[1]
+                total += processed_scores.shape[0]
             elif args.task in ['iambic', 'newline']:
                 use_indices = classification_targets.flatten() != -1
                 loss = criterion(scores.flatten()[use_indices], classification_targets.flatten().float()[use_indices])
