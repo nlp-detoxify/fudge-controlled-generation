@@ -97,7 +97,7 @@ class Dataset:
         if self.toxic:
             # self.vocab['placeholder'] = 1 # anything so we don't crash
             train, val, test = [], [], []
-            train_file = os.path.join(args.data_dir, 'augmented_train_mixed.csv')
+            train_file = os.path.join(args.data_dir, 'train_mixed.csv')
             import pandas as pd
             train_data = pd.read_csv(train_file, engine='python', error_bad_lines=False) # avoid pandas erros
             train_data['toxic'] = 1 - train_data['toxic'] # Reverse label so that 1 is nontoxic
@@ -110,7 +110,7 @@ class Dataset:
             val = train[train_len:train_len + val_len] # TODO split val
             train = train[:train_len]
 
-            test_file = os.path.join(args.data_dir, 'augmented_test_mixed.csv')
+            test_file = os.path.join(args.data_dir, 'test_mixed.csv')
             test_data = pd.read_csv(test_file)
             test_data['toxic'] = 1 - test_data['toxic'] # Reverse label so that 1 is nontoxic
             test = test_data[['prefix', 'toxic']].itertuples(index=False, name=None) # list of tuples
