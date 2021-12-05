@@ -77,7 +77,7 @@ def validate(model, dataset, criterion, epoch, args):
                 processed_scores = scores.flatten()[length_mask.flatten()==1]
                 processed_labels = expanded_labels.flatten().float()[length_mask.flatten()==1]
                 loss = criterion(processed_scores, processed_labels)
-                correct += torch.sum(processed_scores == processed_labels).detach().item()
+                correct += torch.sum(torch.round(torch.sigmoid(processed_scores)) == processed_labels).detach().item()
             elif args.task in ['iambic', 'newline']:
                 use_indices = classification_targets.flatten() != -1
                 loss = criterion(scores.flatten()[use_indices], classification_targets.flatten().float()[use_indices])
@@ -87,7 +87,7 @@ def validate(model, dataset, criterion, epoch, args):
             if batch_num % args.train_print_freq == 0:
                 progress.display(batch_num)
     progress.display(total_length)
-    acc = correct/total_length
+    acc = correct/len(loader.dataset)
     print("validation accuracy: ", acc)
     return loss_meter.avg, acc
 
