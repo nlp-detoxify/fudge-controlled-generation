@@ -107,8 +107,10 @@ class Dataset:
             train_len = 100000
             val_len = train_len // 4
             midpoint = len(train) // 2
-            val = train[train_len//2:train_len//2 + val_len] + train[midpoint+train_len//2:midpoint+train_len//2 + val_len]# TODO split val
-            train = train[:train_len//2] + train[midpoint:midpoint+train_len//2]
+            half_train = train_len // 2
+            half_val = val_len // 2
+            val = train[half_train:half_train + half_val] + train[midpoint + half_train:midpoint + half_train + half_val]# TODO split val
+            train = train[:half_train] + train[midpoint:midpoint + half_train]
 
             test_file = os.path.join(args.data_dir, 'augmented_test_mixed.csv')
             test_data = pd.read_csv(test_file)
