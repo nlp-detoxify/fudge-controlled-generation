@@ -63,6 +63,7 @@ def validate(model, dataset, criterion, epoch, args):
     total_length = len(loader)
     progress = ProgressMeter(total_length, [loss_meter], prefix='Validation: ')
     correct = 0
+    total = 0
     with torch.no_grad():
         for batch_num, batch in enumerate(tqdm(loader, total=len(loader))):
             batch = [tensor.to(args.device) for tensor in batch]
@@ -78,6 +79,7 @@ def validate(model, dataset, criterion, epoch, args):
                 processed_labels = expanded_labels.flatten().float()[length_mask.flatten()==1]
                 loss = criterion(processed_scores, processed_labels)
                 correct += torch.sum(torch.round(torch.sigmoid(processed_scores)) == processed_labels).detach().item()
+                total += processed_scores.shape[0]
             elif args.task in ['iambic', 'newline']:
                 use_indices = classification_targets.flatten() != -1
                 loss = criterion(scores.flatten()[use_indices], classification_targets.flatten().float()[use_indices])
@@ -87,7 +89,7 @@ def validate(model, dataset, criterion, epoch, args):
             if batch_num % args.train_print_freq == 0:
                 progress.display(batch_num)
     progress.display(total_length)
-    acc = correct/len(loader.dataset)
+    acc = correct/total
     print("validation accuracy: ", acc)
     return loss_meter.avg, acc
 
