@@ -80,8 +80,8 @@ def predict_toxicity_gpt(gpt_model, gpt_tokenizer, input_text, condition_words, 
             tokens_left = torch.LongTensor([length_cutoff - lengths.max() for _ in range(batch_size)]).to(device)
             gpt_logits = gpt_model(encoded_input)[0][:, -1, :] # batch x vocab
             top_logits, top_indices = gpt_logits.topk(precondition_topk, dim=1) # batch x topk
-            full_logits = top_logits # + condition_logits * condition_lambda # batch x topk
-            post_logits, post_indices = full_logits # .topk(postcondition_topk, dim=1)
+            # full_logits = top_logits # + condition_logits * condition_lambda # batch x topk
+            post_logits, post_indices = top_logits, top_indices # full_logits.topk(postcondition_topk, dim=1)
             post_probs = F.softmax(post_logits, dim=1)
             index_into_top_indices = post_indices[torch.arange(batch_size).to(post_indices.device), torch.multinomial(post_probs, 1).flatten()] # batch
             next_indices = top_indices[torch.arange(batch_size).to(top_indices.device), index_into_top_indices] # batch
