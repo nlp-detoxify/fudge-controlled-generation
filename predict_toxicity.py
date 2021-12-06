@@ -75,16 +75,15 @@ def predict_toxicity_gpt(gpt_model, gpt_tokenizer, input_text, condition_words, 
 
         encoded_input = torch.cat(encoded_input, dim=0)
         lengths = torch.LongTensor([encoded_input.shape[1]]).to(device)
-        # gpt_encoded_future_words = [gpt_tokenizer.encode(' ' + cw, return_tensors='pt')[0].to(device) for cw in condition_words]
+
         while lengths.max() < length_cutoff + length_initial:
             tokens_left = torch.LongTensor([length_cutoff - lengths.max() for _ in range(batch_size)]).to(device)
             gpt_logits = gpt_model(encoded_input)[0][:, -1, :] # batch x vocab
-            top_logits, top_indices = gpt_logits.topk(precondition_topk, dim=1) # batch x topk
-            # full_logits = top_logits # + condition_logits * condition_lambda # batch x topk
-            post_logits, post_indices = top_logits, top_indices # full_logits.topk(postcondition_topk, dim=1)
-            post_probs = F.softmax(post_logits, dim=1)
-            index_into_top_indices = post_indices[torch.arange(batch_size).to(post_indices.device), torch.multinomial(post_probs, 1).flatten()] # batch
-            next_indices = top_indices[torch.arange(batch_size).to(top_indices.device), index_into_top_indices] # batch
+            top_logits, top_indices = gpt_logits.topk(precondition_topk, dim=1) # batch x topk # top 200
+            # full_logits = top_logits + condition_logits * condition_lambda # batch x topk
+            top_probs = F.softmax(top_logits, dim=1)
+            # take a random index with given prob distrib
+            next_indices = top_indices[torch.arange(batch_size).to(top_indices.device), torch.multinomial(top_probs, 1).flatten()] # batch
             encoded_input = torch.cat([encoded_input, next_indices.unsqueeze(1)], dim=1) # batch x seq+1
             lengths = lengths + 1 # batch
         return [gpt_tokenizer.decode(s[length_initial:]) for s in encoded_input] # only return continuation, not orig prompt
