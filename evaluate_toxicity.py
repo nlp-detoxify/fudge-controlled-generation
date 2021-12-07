@@ -17,7 +17,7 @@ from data import Dataset
 from model import Model
 from util import save_checkpoint, ProgressMeter, AverageMeter, num_params
 from constants import *
-from predict_toxicity import predict_toxicity
+from predict_toxicity import predict_toxicity, predict_toxicity_gpt
 
 def main(args):
     with open(args.dataset_info, 'rb') as rf:
@@ -30,18 +30,19 @@ def main(args):
     gpt_model = AutoModelWithLMHead.from_pretrained(args.model_string).to(args.device)
     gpt_model.eval()
 
+    conditioning_model = None
+    if not args.gpt:
+        checkpoint = torch.load(args.ckpt, map_location=args.device)
+        model_args = checkpoint['args']
+        conditioning_model = Model(model_args, gpt_pad_id, len(dataset_info.index2word)) # no need to get the glove embeddings when reloading since they're saved in model ckpt anyway
+        conditioning_model.load_state_dict(checkpoint['state_dict'])
+        conditioning_model = conditioning_model.to(args.device)
+        conditioning_model.eval()
 
-    checkpoint = torch.load(args.ckpt, map_location=args.device)
-    model_args = checkpoint['args']
-    conditioning_model = Model(model_args, gpt_pad_id, len(dataset_info.index2word)) # no need to get the glove embeddings when reloading since they're saved in model ckpt anyway
-    conditioning_model.load_state_dict(checkpoint['state_dict'])
-    conditioning_model = conditioning_model.to(args.device)
-    conditioning_model.eval()
-
-    if args.verbose:
-        print("=> loaded checkpoint '{}' (epoch {})"
-                .format(args.ckpt, checkpoint['epoch']))
-        print('num params', num_params(conditioning_model))
+        if args.verbose:
+            print("=> loaded checkpoint '{}' (epoch {})"
+                    .format(args.ckpt, checkpoint['epoch']))
+            print('num params', num_params(conditioning_model))
 
     inputs = []
     with open(args.in_file, 'r') as rf:
@@ -55,24 +56,41 @@ def main(args):
         start = len(inputs)//args.num_groups * args.group
         end = len(inputs)//args.num_groups * (args.group+1) if args.group != args.num_groups-1 else len(inputs)
         inputs = inputs[start:end]
+    elif args.start_index != 0 or args.end_index != -1: # non-default case
+        save_file = f'toxicity_results_{args.start_index}to{args.end_index}.txt'
+        inputs = inputs[args.start_index:args.end_index]
 
     with open(os.path.join(args.save_dir, save_file), 'a') as f:
         for inp in tqdm(inputs, total=len(inputs)):
             # skip empty input
             if len(inp) == 0:
                 continue
-            result = predict_toxicity(gpt_model, 
-                            gpt_tokenizer, 
-                            conditioning_model, 
-                            [inp], 
-                            [], # condition_words
-                            dataset_info, 
-                            precondition_topk=args.precondition_topk,
-                            postcondition_topk=args.precondition_topk,
-                            # do_sample=args.do_sample,
-                            length_cutoff=args.length_cutoff,
-                            condition_lambda=args.condition_lambda,
-                            device=args.device)
+            result = None
+            if args.gpt:
+                result = predict_toxicity_gpt(gpt_model, 
+                        gpt_tokenizer, 
+                        [inp], 
+                        [], # condition_words
+                        dataset_info, 
+                        precondition_topk=args.precondition_topk,
+                        postcondition_topk=args.precondition_topk,
+                        # do_sample=args.do_sample,
+                        length_cutoff=args.length_cutoff,
+                        condition_lambda=args.condition_lambda,
+                        device=args.device)
+            else:
+                result = predict_toxicity(gpt_model, 
+                        gpt_tokenizer, 
+                        conditioning_model, 
+                        [inp], 
+                        [], # condition_words
+                        dataset_info, 
+                        precondition_topk=args.precondition_topk,
+                        postcondition_topk=args.precondition_topk,
+                        # do_sample=args.do_sample,
+                        length_cutoff=args.length_cutoff,
+                        condition_lambda=args.condition_lambda,
+                        device=args.device)
             result = result[0]
             result = result.replace('\n', ' ')
             # print(result)
@@ -100,11 +118,15 @@ if __name__=='__main__':
     parser.add_argument('--num_groups', type=int, default=1, help='number of groups to split input into')
     parser.add_argument('--group', type=int, default=0, help='which input group: 0 through num_groups-1')
 
+    parser.add_argument('--start_index', type=int, default=0, help='index to start processing')
+    parser.add_argument('--end_index', type=int, default=-1, help='index to stop at (exclusive)')
+
     parser.add_argument('--seed', type=int, default=1, help='random seed')
     parser.add_argument('--device', type=str, default='cuda', choices=['cpu', 'cuda'])
     parser.add_argument('--debug', action='store_true', default=False)
     parser.add_argument('--verbose', action='store_true', default=False)
 
+    parser.add_argument('--gpt', action='store_true', default=False)
     args = parser.parse_args()
 
     random.seed(args.seed)

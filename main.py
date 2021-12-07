@@ -62,6 +62,8 @@ def validate(model, dataset, criterion, epoch, args):
     loss_meter = AverageMeter('loss', ':6.4f')
     total_length = len(loader)
     progress = ProgressMeter(total_length, [loss_meter], prefix='Validation: ')
+    correct = 0
+    total = 0
     with torch.no_grad():
         for batch_num, batch in enumerate(tqdm(loader, total=len(loader))):
             batch = [tensor.to(args.device) for tensor in batch]
@@ -73,7 +75,11 @@ def validate(model, dataset, criterion, epoch, args):
             if args.task == 'formality' or args.task == 'toxic': # we're learning for all positions at once. scores are batch x seq
                 expanded_labels = classification_targets.unsqueeze(1).expand(-1, scores.shape[1]) # batch x seq
                 length_mask = pad_mask(lengths).permute(1, 0) # batch x seq
-                loss = criterion(scores.flatten()[length_mask.flatten()==1], expanded_labels.flatten().float()[length_mask.flatten()==1])
+                processed_scores = scores.flatten()[length_mask.flatten()==1]
+                processed_labels = expanded_labels.flatten().float()[length_mask.flatten()==1]
+                loss = criterion(processed_scores, processed_labels)
+                correct += torch.sum(torch.round(torch.sigmoid(processed_scores)) == processed_labels).detach().item()
+                total += processed_scores.shape[0]
             elif args.task in ['iambic', 'newline']:
                 use_indices = classification_targets.flatten() != -1
                 loss = criterion(scores.flatten()[use_indices], classification_targets.flatten().float()[use_indices])
@@ -83,7 +89,9 @@ def validate(model, dataset, criterion, epoch, args):
             if batch_num % args.train_print_freq == 0:
                 progress.display(batch_num)
     progress.display(total_length)
-    return loss_meter.avg
+    acc = correct/total
+    print("validation accuracy: ", acc)
+    return loss_meter.avg, acc
 
 
 def main(args):
@@ -128,11 +136,12 @@ def main(args):
         data_start_index = train(model, dataset, optimizer, criterion, epoch, args, data_start_index)
         if epoch % args.validation_freq == 0:
             print("VALIDATION: Epoch {} at {}".format(epoch, time.ctime()))
-            metric = validate(model, dataset, criterion, epoch, args)
+            metric, acc = validate(model, dataset, criterion, epoch, args)
 
             if not args.debug:
                 if metric < best_val_metric:
                     print('new best val metric', metric)
+                    print('accuracy', acc)
                     best_val_metric = metric
                     save_checkpoint({
                         'epoch': epoch,

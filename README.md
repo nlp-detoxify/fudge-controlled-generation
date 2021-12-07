@@ -1,3 +1,7 @@
+# Controlled Text Generation for Detoxifying Language
+
+Using FUDGE for detoxifying comments
+
 # FUDGE: Controlled Text Generation With Future Discriminators
 
 This repo contains code corresponding to the paper FUDGE: Controlled Text Generation With Future Discriminators (https://arxiv.org/abs/2104.05218) by Kevin Yang and Dan Klein, published at NAACL 2021. 

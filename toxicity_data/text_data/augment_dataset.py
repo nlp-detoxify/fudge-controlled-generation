@@ -66,30 +66,42 @@ def process_full():
 
 # process_full()
 
-def process_short(size=100, ratio=None, mix=True, type='train'):
+def process_short(size=100, ratio=None, mix=True, type='train', aug=True):
     if ratio is not None:
         size = ratio * len(pd.read_csv(f'{type}_all_nontoxic.csv'))
         size = int(size)
     if mix:
         df = pd.concat([pd.read_csv(f"{type}_all_nontoxic.csv").head(size//2), pd.read_csv(f"{type}_all_toxic.csv").head(size//2)])
-        new_df = augment(df)[['prefix', 'toxic']]
-        new_df.to_csv(f'augmented_{type}_mixed.csv', index=False)
+        if aug:
+            new_df = augment(df)[['prefix', 'toxic']]
+            new_df.to_csv(f'augmented_{type}_mixed.csv', index=False)
+        else:
+            df.to_csv(f'{type}_mixed.csv', index=False)
     else:
         df = pd.read_csv(f'{type}_all_nontoxic.csv').head(size)
-        new_df = augment(df)[['prefix', 'toxic']]
-        new_df.to_csv(f'augmented_{type}.csv', index=False)
+        if aug:
+            new_df = augment(df)[['prefix', 'toxic']]
+            new_df.to_csv(f'augmented_{type}.csv', index=False)
+        else:
+            df.to_csv(f'{type}.csv', index=False)
+        
 
 if __name__ == '__main__':
     parser = ArgumentParser()
     # DATA
     parser.add_argument('--size', type=int, default=100) # ideally 5000 sentences for 100K prefixes
     parser.add_argument('--ratio', type=float, default=None)
-    parser.add_argument('--mix', type=bool, default=True, help='whether or not to evenly mix train and test')
+    parser.add_argument('--mix', dest='mix', action='store_true', help='whether or not to evenly mix train and test')
+    parser.add_argument('--no_mix', dest='mix', action='store_false', help='whether or not to evenly mix train and test')
+    parser.set_defaults(mix=True)
+    parser.add_argument('--augment', dest='augment', action='store_true', help='whether to augment data')
+    parser.add_argument('--no_augment', dest='augment', action='store_false', help='whether to augment data')
+    parser.set_defaults(mix=True)
     parser.add_argument('--type', type=str, default='train', choices=['train', 'test', 'both'])
 
     args = parser.parse_args()
     if args.type == 'both':
-        process_short(size=args.size, ratio=args.ratio, mix=args.mix, type='train')
-        process_short(size=args.size, ratio=args.ratio, mix=args.mix, type='test') 
+        process_short(size=args.size, ratio=args.ratio, mix=args.mix, type='train', aug=args.augment)
+        process_short(size=args.size, ratio=args.ratio, mix=args.mix, type='test', aug=args.augment) 
     else:
-        process_short(size=args.size, ratio=args.ratio, mix=args.mix, type=args.type)
+        process_short(size=args.size, ratio=args.ratio, mix=args.mix, type=args.type, aug=args.augment)
