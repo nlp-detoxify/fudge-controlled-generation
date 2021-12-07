@@ -127,10 +127,11 @@ def predict_toxicity(gpt_model, gpt_tokenizer, conditioning_model, input_text, c
                                                     # expanded_future_words.flatten(0, 1), # batch*topk x N
                                                     # log_probs, # N
                                                     # expanded_tokens_left.flatten(0, 1)) # batch*topk
-                condition_logits = condition_logits.view(batch_size, precondition_topk, -1) # batch x topk x N
+                condition_logits = condition_logits.view(batch_size, precondition_topk, -1)[:, :, -1] # batch x topk x N
                 condition_logits = condition_logits - torch.log(1 + torch.exp(condition_logits)) # get correct log probs
 
-            condition_logits = torch.mean(condition_logits, dim=2)
+            # condition_logits = torch.mean(condition_logits, dim=2)
+            # condition_logits = condition_logits[]
             full_logits = top_logits + condition_logits * condition_lambda # batch x topk
             post_logits, post_indices = full_logits.topk(postcondition_topk, dim=1)
             post_probs = F.softmax(post_logits, dim=1)
