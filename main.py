@@ -58,7 +58,8 @@ def train(model, dataset, optimizer, criterion, epoch, args, data_start_index):
 def validate(model, dataset, criterion, epoch, args):
     model.eval()
     random.seed(0)
-    loader = dataset.loader('val', num_workers=args.num_workers)
+    data_name = 'test' if args.test else 'val'
+    loader = dataset.loader(data_name, num_workers=args.num_workers)
     loss_meter = AverageMeter('loss', ':6.4f')
     total_length = len(loader)
     progress = ProgressMeter(total_length, [loss_meter], prefix='Validation: ')
@@ -126,7 +127,7 @@ def main(args):
         data_start_index = 0
     print('num params', num_params(model))
     criterion = nn.BCEWithLogitsLoss().to(args.device)
-    
+
     if args.evaluate:
         epoch = 0
         validate(model, dataset, criterion, epoch, args)
@@ -187,6 +188,7 @@ if __name__=='__main__':
     parser.add_argument('--device', type=str, default='cuda', choices=['cpu', 'cuda'])
     parser.add_argument('--num_workers', type=int, default=20, help='num workers for data loader')
     parser.add_argument('--evaluate', action='store_true', default=False)
+    parser.add_argument('--test', action='store_true', default=False)
     parser.add_argument('--debug', action='store_true', default=False)
 
     # PRINTING
